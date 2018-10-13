@@ -1,0 +1,133 @@
+function [J,grad] = doublelayerCostFunction(nn_params, ...
+                                   input_layer_size, ...
+                                   hidden_layer1_size, ...
+                                   hidden_layer2_size,...
+                                   num_labels, ...
+                                   X,  y, lambda)
+
+
+%% Unrolling the initialised parameters
+
+Theta1 = reshape(nn_params(1:hidden_layer1_size * (input_layer_size + 1)), ...
+                 [hidden_layer1_size, (input_layer_size + 1)]);
+             
+ Theta2 = reshape(nn_params(1+ (hidden_layer1_size* (input_layer_size+1)):hidden_layer1_size*(input_layer_size+1) + hidden_layer2_size*(hidden_layer1_size+1)),...
+                   [hidden_layer2_size, (hidden_layer1_size+1)]) ;
+               
+ Theta3 = reshape(nn_params(1 + (hidden_layer1_size*(input_layer_size+1) + hidden_layer2_size*(hidden_layer1_size+1)) : end),...
+                   num_labels , (hidden_layer2_size+1) ) ;
+
+
+
+m = size(X, 1);
+         
+
+J = 0;
+Theta1_grad = zeros(size(Theta1));
+Theta2_grad = zeros(size(Theta2));
+Theta3_grad = zeros(size(Theta3)) ;
+
+
+
+%% ones are added as bias units in every layer, sigmoid function is used
+
+a1 = [ones(m, 1) X];
+
+z2 = a1*transpose(Theta1) ;
+a2 = sigmoid(z2) ;
+
+a2 = [ones(m,1),a2] ;
+
+z3 = a2*transpose(Theta2) ;
+a3 = sigmoid(z3) ;
+ a3 =[ones(m,1),a3] ;
+z4 = a3*transpose(Theta3) ;
+a4 = sigmoid(z4) ;
+
+
+
+h=a4 ;
+
+%% Costfunction J is calculated as follows
+
+k = zeros(num_labels,m) ;
+for c= 1:m
+    p=y(c,1) ;
+    k(p,c) = 1 ;
+    J = J -(log(h(c,1:num_labels))*k(1:num_labels,c) +(log(1-h(c,1:num_labels)))*(1-k(1:num_labels,c)))/m ;
+end
+
+%% Regularisation terms are as follows
+
+p = sum(sum((Theta1).^2)) - sum(Theta1(:,1).^2) ;
+
+q = sum(sum((Theta2).^2)) - sum(Theta2(:,1).^2) ;
+
+r = sum(sum((Theta3).^2)) - sum(Theta3(:,1).^2) ;
+
+val = p + q + r ;
+J = J + lambda*val/(2*m) ;
+
+
+
+%% Implementing backpropagation
+
+
+
+delta4 = transpose(a4) - k ;
+
+delta3 = transpose(Theta3)*delta4 ;
+
+
+delta3 = delta3(2:hidden_layer2_size+1,:) ; 
+
+delta2 = transpose(Theta2)*delta3 ; 
+
+
+%% Sigmoidgradient is the derivative of sigmoid function at the value given
+
+delta2 = delta2(2:hidden_layer1_size+1,:) ; 
+delta2 = transpose(delta2); %5000x25
+delta2 = delta2.*sigmoidGradient(z2) ; 
+
+
+
+delta3 = transpose(delta3) ; 
+delta3 = delta3.*sigmoidGradient(z3) ; 
+
+
+
+
+delta4 = transpose(delta4) ; 
+
+
+ Theta3_grad = (transpose(delta4)*a3)./m ;
+ 
+ Theta2_grad = (transpose(delta3)*a2)./m ;
+ 
+ Theta1_grad = (transpose(delta2)*a1)./m ;
+ 
+ 
+ 
+ p = Theta1_grad(:,2:input_layer_size+1) ;
+p = p + lambda.*p./m ;
+Theta1_grad = [Theta1_grad(:,1),p];
+
+
+p = Theta2_grad(:,2:hidden_layer1_size+1) ;
+p = p + lambda.*p./m ;
+Theta2_grad = [Theta2_grad(:,1),p] ;
+
+
+ 
+  p = Theta3_grad(:,2:hidden_layer2_size+1) ;
+p = p + lambda.*p./m ;
+Theta3_grad = [Theta3_grad(:,1),p];
+ 
+ 
+%% Returning the parameters rolled back
+
+grad = [Theta1_grad(:) ; Theta2_grad(:) ; Theta3_grad(:)];
+
+
+end
