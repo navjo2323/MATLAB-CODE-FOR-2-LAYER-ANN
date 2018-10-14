@@ -1,4 +1,4 @@
-# MATLAB-CODE-FOR-2-LAYER-ANN
+# MATLAB-CODE-FOR-3-LAYER-ANN
 
 The implementation is vectorised to perform faster.
 
